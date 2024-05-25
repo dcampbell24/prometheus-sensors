@@ -72,6 +72,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "72b3254f16251a8381aa12e40e3c4d2f0199f8c6508fbecb9d91f575e0fbb8c6"
 
 [[package]]
+name = "bit_field"
+version = "0.10.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dc827186963e592360843fb5ba4b973e145841266c1357f7180c43526f2e5b61"
+
+[[package]]
 name = "bitflags"
 version = "1.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -529,6 +535,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "mcp9808"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c8298072b572f2c969fb7b224ed0585ec677e98882f8c1de9b1866569d6e1dd1"
+dependencies = [
+ "bit_field",
+ "cast",
+ "embedded-hal",
+]
+
+[[package]]
 name = "memchr"
 version = "2.7.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -832,6 +849,7 @@ dependencies = [
  "bme280",
  "embedded-hal",
  "linux-embedded-hal",
+ "mcp9808",
  "metrics",
  "metrics-exporter-prometheus",
 ]

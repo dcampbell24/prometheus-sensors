@@ -11,6 +11,7 @@ edition = "2021"
 bme280 = { git = "https://github.com/RobinThrift/bme280-rs.git" }
 embedded-hal = "1"
 linux-embedded-hal = "0.4"
+mcp9808 = "0.3"
 metrics = "0.22"
 metrics-exporter-prometheus = "0.14"
 

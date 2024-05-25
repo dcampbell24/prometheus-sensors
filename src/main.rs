@@ -1,8 +1,21 @@
 use bme280::i2c;
 use embedded_hal::delay::DelayNs;
 use linux_embedded_hal::{Delay, I2cdev};
+use mcp9808::reg_conf::{Configuration, ShutdownMode};
+use mcp9808::reg_temp_generic::ReadableTempRegister;
+use mcp9808::reg_res::ResolutionVal;
 use metrics::{gauge, Gauge};
 use metrics_exporter_prometheus::PrometheusBuilder;
+
+const BUS_PATH: &str = "/dev/i2c-1";
+
+const BME280_HUMIDITY: &str = "humidity_percent";
+const BME280_PRESSURE: &str = "pressure_atm";
+const BME280_TEMPERATURE_C: &str = "temperature_C_";
+const BME280_TEMPERATURE_F: &str = "temperature_F_";
+
+const MCP9808_TEMPERATURE_C: &str = "temperature_C";
+const MCP9808_TEMPERATURE_F: &str = "temperature_F";
 
 fn main() {
     let builder = PrometheusBuilder::new();
@@ -12,9 +25,16 @@ fn main() {
         .expect("failed to install recorder/exporter");
 
     let mut delay = Delay;
-    let mut bme280 = BME280::init(&mut delay);
+
+    let i2c_bus = I2cdev::new(BUS_PATH).unwrap();
+    let mut bme280 = BME280::init(i2c_bus, &mut delay);
+
+    let i2c_bus = I2cdev::new(BUS_PATH).unwrap();
+    let mut mcp9808 = MCP9808::init(i2c_bus);
+
     loop {
         bme280.measure(&mut delay);
+        mcp9808.read_temperature();
         delay.delay_ms(1_000);
     }
 }
@@ -31,13 +51,12 @@ pub struct BME280 {
 }
 
 impl BME280 {
-    fn init(delay: &mut Delay) -> Self {
-        let humidity = gauge!("humidity_percent");
-        let pressure = gauge!("pressure_atm");
-        let temperature_c = gauge!("temperature_celsius");
-        let temperature_f = gauge!("temperature_fahrenheit");
+    fn init(i2c_bus: I2cdev ,delay: &mut Delay) -> Self {
+        let humidity = gauge!(BME280_HUMIDITY);
+        let pressure = gauge!(BME280_PRESSURE);
+        let temperature_c = gauge!(BME280_TEMPERATURE_C);
+        let temperature_f = gauge!(BME280_TEMPERATURE_F);
 
-        let i2c_bus = I2cdev::new("/dev/i2c-1").unwrap();
         // Initialize the BME280 using the primary I2C address 0x76.
         let mut bme280 = i2c::BME280::new_primary(i2c_bus);
         bme280.init(delay).unwrap();
@@ -54,5 +73,36 @@ impl BME280 {
         self.pressure.set(measurements.pressure * 0.000_009_87);
         self.temperature_c.set(measurements.temperature);
         self.temperature_f.set((measurements.temperature * 1.8) + 32.0);
+    }
+}
+
+ // Accuracy: Typical ±0.25°C /  Maximum ±0.5°C
+pub struct MCP9808 {
+    mcp9808: mcp9808::MCP9808<I2cdev>,
+    temperature_c: Gauge,
+    temperature_f: Gauge,
+}
+
+impl MCP9808 {
+    fn init (i2c_bus: I2cdev) -> Self {
+        let mut mcp9808 = mcp9808::MCP9808::new(i2c_bus);
+
+        let mut conf = mcp9808.read_configuration().unwrap();
+        conf.set_shutdown_mode(ShutdownMode::Shutdown);
+        mcp9808.write_register(conf).unwrap();
+
+        let temperature_c = gauge!(MCP9808_TEMPERATURE_C);
+        let temperature_f = gauge!(MCP9808_TEMPERATURE_F);
+
+        MCP9808 {
+            mcp9808, temperature_c, temperature_f
+        }
+    }
+
+    fn read_temperature(&mut self) {
+        let temperature = self.mcp9808.read_temperature().unwrap();
+        let temperature = temperature.get_celsius(ResolutionVal::Deg_0_0625C);
+        self.temperature_c.set(temperature);
+        self.temperature_f.set((temperature * 1.8) + 32.0);
     }
 }
