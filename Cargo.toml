@@ -1,6 +1,6 @@
 [package]
 name = "prometheus-sensors"
-description = "A bme280 service."
+description = "A bme280 and mcp9808 service."
 authors = ["David Lawrence Campbell"]
 license = "MIT"
 version = "0.1.0"
