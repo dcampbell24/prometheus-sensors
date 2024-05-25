@@ -1,0 +1,22 @@
+[package]
+name = "prometheus-sensors"
+description = "A bme280 service."
+authors = ["David Lawrence Campbell"]
+license = "MIT"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+# bme280 = "0.5"
+bme280 = { git = "https://github.com/RobinThrift/bme280-rs.git" }
+embedded-hal = "1"
+linux-embedded-hal = "0.4"
+metrics = "0.22"
+metrics-exporter-prometheus = "0.14"
+
+[package.metadata.deb]
+maintainer = "David Campbell <dcampbell24@gmail.com>"
+assets = [
+    ["target/release/prometheus-sensors", "usr/bin/", "755"],
+    ["sensors.service", "etc/systemd/system/", "755"],
+]

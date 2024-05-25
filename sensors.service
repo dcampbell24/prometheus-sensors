@@ -1,0 +1,10 @@
+[Unit]
+Description=Prometheus logging of the BME280
+
+[Service]
+Type=simple
+Restart=always
+ExecStart=/usr/bin/prometheus-sensors
+
+[Install]
+WantedBy=multi-user.target
