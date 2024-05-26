@@ -138,6 +138,6 @@ impl Difference {
 
     fn read_temperature_difference(&mut self, bme280: &mut BME280, mcp9808: &mut MCP9808) {
         self.temperature_difference
-            .set(mcp9808.temperature_c_ - bme280.temperature_c_);
+            .set(bme280.temperature_c_ - mcp9808.temperature_c_);
     }
 }
