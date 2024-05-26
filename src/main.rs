@@ -101,7 +101,7 @@ impl MCP9808 {
         let mut mcp9808 = mcp9808::MCP9808::new(i2c_bus);
 
         let mut conf = mcp9808.read_configuration().unwrap();
-        conf.set_shutdown_mode(ShutdownMode::Shutdown);
+        conf.set_shutdown_mode(ShutdownMode::Continuous);
         mcp9808.write_register(conf).unwrap();
 
         let temperature_c = gauge!(MCP9808_TEMPERATURE_C);
