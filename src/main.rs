@@ -12,8 +12,8 @@ const TEMPERATURE_DIFFERENCE: &str = "temperature_difference_C";
 
 const BME280_HUMIDITY: &str = "humidity_percent";
 const BME280_PRESSURE: &str = "pressure_atm";
-const BME280_TEMPERATURE_C: &str = "temperature_C_";
-const BME280_TEMPERATURE_F: &str = "temperature_F_";
+const BME280_TEMPERATURE_C: &str = "temperature_celsius";
+const BME280_TEMPERATURE_F: &str = "temperature_fahrenheit";
 
 const MCP9808_TEMPERATURE_C: &str = "temperature_C";
 const MCP9808_TEMPERATURE_F: &str = "temperature_F";
