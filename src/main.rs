@@ -39,7 +39,7 @@ fn main() {
         bme280.measure(&mut delay);
         mcp9808.read_temperature();
         temperature_difference.read_temperature_difference(&mut bme280, &mut mcp9808);
-        delay.delay_ms(1_000);
+        delay.delay_ms(10_000);
     }
 }
 
