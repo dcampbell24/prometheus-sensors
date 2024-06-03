@@ -1,3 +1,5 @@
+use std::time::Instant;
+
 use bme280::i2c;
 use embedded_hal::delay::DelayNs;
 use linux_embedded_hal::{Delay, I2cdev};
@@ -8,15 +10,16 @@ use metrics::{gauge, Gauge};
 use metrics_exporter_prometheus::PrometheusBuilder;
 
 const BUS_PATH: &str = "/dev/i2c-1";
-const TEMPERATURE_DIFFERENCE: &str = "temperature_difference_C";
+const TEMPERATURE_DIFFERENCE: &str = "sensors_temperature_difference_C";
+const LOOP_TIMING: &str = "sensors_loop_timing";
 
-const BME280_HUMIDITY: &str = "humidity_percent";
-const BME280_PRESSURE: &str = "pressure_atm";
-const BME280_TEMPERATURE_C: &str = "temperature_celsius";
-const BME280_TEMPERATURE_F: &str = "temperature_fahrenheit";
+const BME280_HUMIDITY: &str = "sensors_humidity_percent_bme280";
+const BME280_PRESSURE: &str = "sensors_pressure_atm_bme280";
+const BME280_TEMPERATURE_C: &str = "sensors_temperature_celsius_bme280";
+const BME280_TEMPERATURE_F: &str = "sensors_temperature_fahrenheit_bme280";
 
-const MCP9808_TEMPERATURE_C: &str = "temperature_C";
-const MCP9808_TEMPERATURE_F: &str = "temperature_F";
+const MCP9808_TEMPERATURE_C: &str = "sensors_temperature_celsius_mcp9808";
+const MCP9808_TEMPERATURE_F: &str = "sensors_temperature_fahrenheit_mcp9808";
 
 fn main() {
     let builder = PrometheusBuilder::new();
@@ -34,12 +37,16 @@ fn main() {
     let mut mcp9808 = MCP9808::init(i2c_bus);
 
     let mut temperature_difference = Difference::init();
+    let loop_time = gauge!(LOOP_TIMING);
 
     loop {
+        let t0 = Instant::now();
         bme280.measure(&mut delay);
         mcp9808.read_temperature();
         temperature_difference.read_temperature_difference(&mut bme280, &mut mcp9808);
         delay.delay_ms(10_000);
+        let elapsed_time = t0.elapsed();
+        loop_time.set(elapsed_time.as_secs_f64());
     }
 }
 
