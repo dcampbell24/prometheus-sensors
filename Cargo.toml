@@ -13,7 +13,7 @@ linux-embedded-hal = "0.4"
 mcp9808 = "0.3"
 metrics = "0.22"
 metrics-exporter-prometheus = "0.14"
-sht31 = "0.3.0"
+sht31 = "0.3"
 
 [package.metadata.deb]
 maintainer = "David Campbell <dcampbell24@gmail.com>"
