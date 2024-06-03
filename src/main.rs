@@ -8,6 +8,8 @@ use mcp9808::reg_res::ResolutionVal;
 use mcp9808::reg_temp_generic::ReadableTempRegister;
 use metrics::{gauge, Gauge};
 use metrics_exporter_prometheus::PrometheusBuilder;
+use sht31::mode::{Sht31Measure, Sht31Reader, SingleShot};
+use sht31::{Accuracy, TemperatureUnit};
 
 const BUS_PATH: &str = "/dev/i2c-1";
 const TEMPERATURE_DIFFERENCE: &str = "sensors_temperature_difference_C";
@@ -20,6 +22,10 @@ const BME280_TEMPERATURE_F: &str = "sensors_temperature_fahrenheit_bme280";
 
 const MCP9808_TEMPERATURE_C: &str = "sensors_temperature_celsius_mcp9808";
 const MCP9808_TEMPERATURE_F: &str = "sensors_temperature_fahrenheit_mcp9808";
+
+const SHT31_HUMIDITY: &str = "sensors_humidity_percent_sht31";
+const SHT31_TEMPERATURE_C: &str = "sensors_temperature_celsius_sht31";
+const SHT31_TEMPERATURE_F: &str = "sensors_temperature_fahrenheit_sht31";
 
 fn main() {
     let builder = PrometheusBuilder::new();
@@ -36,15 +42,20 @@ fn main() {
     let i2c_bus = I2cdev::new(BUS_PATH).unwrap();
     let mut mcp9808 = MCP9808::init(i2c_bus);
 
+    let i2c_bus = I2cdev::new(BUS_PATH).unwrap();
+    let mut sht31 = SHT31::init(i2c_bus, &mut delay);
+
     let mut temperature_difference = Difference::init();
     let loop_time = gauge!(LOOP_TIMING);
 
     loop {
         let t0 = Instant::now();
+        sht31.measure();
         delay.delay_ms(10_000);
 
         bme280.measure(&mut delay);
         mcp9808.read_temperature();
+        sht31.read();
         temperature_difference.read_temperature_difference(&mut bme280, &mut mcp9808);
 
         loop_time.set(t0.elapsed().as_secs_f64());
@@ -127,6 +138,47 @@ impl MCP9808 {
         let temperature = self.mcp9808.read_temperature().unwrap();
         let temperature = temperature.get_celsius(ResolutionVal::Deg_0_0625C);
         self.temperature_c_ = temperature;
+        self.temperature_c.set(temperature);
+        self.temperature_f.set((temperature * 1.8) + 32.0);
+    }
+}
+
+// Relative Humidity ± 2 %
+// Temperature ± 0.3 °C
+pub struct SHT31 {
+    sht31: sht31::SHT31<SingleShot, I2cdev>,
+    humidity: Gauge,
+    temperature_c: Gauge,
+    temperature_f: Gauge,
+}
+
+impl SHT31 {
+    fn init(i2c_bus: I2cdev, delay: &mut Delay) -> Self {
+        let sht31 = sht31::SHT31::new(i2c_bus, delay)
+            .with_mode(SingleShot::new())
+            .with_accuracy(Accuracy::High)
+            .with_unit(TemperatureUnit::Celsius);
+
+        let humidity = gauge!(SHT31_HUMIDITY);
+        let temperature_c = gauge!(SHT31_TEMPERATURE_C);
+        let temperature_f = gauge!(SHT31_TEMPERATURE_F);
+
+        SHT31 {
+            sht31,
+            humidity,
+            temperature_c,
+            temperature_f,
+        }
+    }
+
+    fn measure(&mut self) {
+        self.sht31.measure().unwrap();
+    }
+
+    fn read(&mut self) {
+        let reading = self.sht31.read().unwrap();
+        self.humidity.set(reading.humidity);
+        let temperature = reading.temperature;
         self.temperature_c.set(temperature);
         self.temperature_f.set((temperature * 1.8) + 32.0);
     }
