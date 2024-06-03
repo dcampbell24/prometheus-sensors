@@ -7,8 +7,8 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-# bme280 = "0.5"
-bme280 = { git = "https://github.com/RobinThrift/bme280-rs.git" }
+bme280 = "0.5"
+# bme280 = { git = "https://github.com/RobinThrift/bme280-rs.git" }
 embedded-hal = "1"
 linux-embedded-hal = "0.4"
 mcp9808 = "0.3"

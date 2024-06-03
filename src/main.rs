@@ -41,12 +41,13 @@ fn main() {
 
     loop {
         let t0 = Instant::now();
+        delay.delay_ms(10_000);
+
         bme280.measure(&mut delay);
         mcp9808.read_temperature();
         temperature_difference.read_temperature_difference(&mut bme280, &mut mcp9808);
-        delay.delay_ms(10_000);
-        let elapsed_time = t0.elapsed();
-        loop_time.set(elapsed_time.as_secs_f64());
+
+        loop_time.set(t0.elapsed().as_secs_f64());
     }
 }
 
