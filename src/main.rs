@@ -9,7 +9,7 @@ use mcp9808::reg_temp_generic::ReadableTempRegister;
 use metrics::{gauge, Gauge};
 use metrics_exporter_prometheus::PrometheusBuilder;
 use sht31::mode::{Sht31Measure, Sht31Reader, SingleShot};
-use sht31::{Accuracy, TemperatureUnit};
+use sht31::{Accuracy, DeviceAddr, TemperatureUnit};
 
 const BUS_PATH: &str = "/dev/i2c-1";
 const TEMPERATURE_DIFFERENCE: &str = "sensors_temperature_difference_C";
@@ -157,6 +157,7 @@ impl SHT31 {
         let sht31 = sht31::SHT31::new(i2c_bus, delay)
             .with_mode(SingleShot::new())
             .with_accuracy(Accuracy::High)
+            .with_address(DeviceAddr::AD1)
             .with_unit(TemperatureUnit::Celsius);
 
         let humidity = gauge!(SHT31_HUMIDITY);
