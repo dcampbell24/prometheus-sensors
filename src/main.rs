@@ -8,8 +8,8 @@ use mcp9808::reg_res::ResolutionVal;
 use mcp9808::reg_temp_generic::ReadableTempRegister;
 use metrics::{gauge, Gauge};
 use metrics_exporter_prometheus::PrometheusBuilder;
-use sht31::mode::{Sht31Measure, Sht31Reader, SingleShot};
-use sht31::{Accuracy, DeviceAddr, TemperatureUnit};
+use sht31::mode::{Periodic, Sht31Measure, Sht31Reader, MPS};
+use sht31::{Accuracy, TemperatureUnit};
 
 const BUS_PATH: &str = "/dev/i2c-1";
 const TEMPERATURE_DIFFERENCE: &str = "sensors_temperature_difference_C";
@@ -50,7 +50,6 @@ fn main() {
 
     loop {
         let t0 = Instant::now();
-        sht31.measure();
         delay.delay_ms(10_000);
 
         bme280.measure(&mut delay);
@@ -146,7 +145,7 @@ impl MCP9808 {
 // Relative Humidity ± 2 %
 // Temperature ± 0.3 °C
 pub struct SHT31 {
-    sht31: sht31::SHT31<SingleShot, I2cdev>,
+    sht31: sht31::SHT31<Periodic, I2cdev>,
     humidity: Gauge,
     temperature_c: Gauge,
     temperature_f: Gauge,
@@ -154,11 +153,12 @@ pub struct SHT31 {
 
 impl SHT31 {
     fn init(i2c_bus: I2cdev, delay: &mut Delay) -> Self {
-        let sht31 = sht31::SHT31::new(i2c_bus, delay)
-            .with_mode(SingleShot::new())
+        let mut sht31 = sht31::SHT31::new(i2c_bus, delay)
+            .with_mode(Periodic::new().with_mps(MPS::Normal))
             .with_accuracy(Accuracy::High)
-            .with_address(DeviceAddr::AD1)
             .with_unit(TemperatureUnit::Celsius);
+
+        sht31.measure().unwrap();
 
         let humidity = gauge!(SHT31_HUMIDITY);
         let temperature_c = gauge!(SHT31_TEMPERATURE_C);
@@ -170,10 +170,6 @@ impl SHT31 {
             temperature_c,
             temperature_f,
         }
-    }
-
-    fn measure(&mut self) {
-        self.sht31.measure().unwrap();
     }
 
     fn read(&mut self) {
