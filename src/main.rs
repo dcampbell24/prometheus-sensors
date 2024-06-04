@@ -34,25 +34,26 @@ fn main() {
         .install()
         .expect("failed to install recorder/exporter");
 
-    let mut delay = Delay;
+    let mut delay_1 = Delay;
+    let mut delay_2 = Delay;
 
     let i2c_bus = I2cdev::new(BUS_PATH).unwrap();
-    let mut bme280 = BME280::init(i2c_bus, &mut delay);
+    let mut bme280 = BME280::init(i2c_bus, &mut delay_1);
 
     let i2c_bus = I2cdev::new(BUS_PATH).unwrap();
     let mut mcp9808 = MCP9808::init(i2c_bus);
 
     let i2c_bus = I2cdev::new(BUS_PATH).unwrap();
-    let mut sht31 = SHT31::init(i2c_bus, &mut delay);
+    let mut sht31 = SHT31::init(i2c_bus, &mut delay_2);
 
     let mut temperature_difference = Difference::init();
     let loop_time = gauge!(LOOP_TIMING);
 
     loop {
         let t0 = Instant::now();
-        delay.delay_ms(10_000);
+        delay_1.delay_ms(10_000);
 
-        bme280.measure(&mut delay);
+        bme280.measure(&mut delay_1);
         mcp9808.read_temperature();
         sht31.read();
         temperature_difference.read_temperature_difference(&mut bme280, &mut mcp9808);
