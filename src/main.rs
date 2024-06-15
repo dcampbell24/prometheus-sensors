@@ -1,6 +1,7 @@
 use std::time::Instant;
 
 use bme280::i2c;
+use chrono::Utc;
 use embedded_hal::delay::DelayNs;
 use linux_embedded_hal::{Delay, I2cdev};
 use mcp9808::reg_conf::{Configuration, ShutdownMode};
@@ -8,8 +9,15 @@ use mcp9808::reg_res::ResolutionVal;
 use mcp9808::reg_temp_generic::ReadableTempRegister;
 use metrics::{gauge, Gauge};
 use metrics_exporter_prometheus::PrometheusBuilder;
+use reqwest::blocking::Client;
+use reqwest::Url;
 use sht31::mode::{Sht31Measure, Sht31Reader, SingleShot};
 use sht31::{Accuracy, TemperatureUnit};
+
+const WEATHER_UNDERGROUND_URL: &str =
+    "https://weatherstation.wunderground.com/weatherstation/updateweatherstation.php";
+const WEATHER_UNDERGROUND_ID: &str = "";
+const WEATHER_UNDERGROUND_UPLOAD_KEY: &str = "";
 
 const BUS_PATH: &str = "/dev/i2c-1";
 const TEMPERATURE_DIFFERENCE: &str = "sensors_temperature_difference_C";
@@ -48,6 +56,8 @@ fn main() {
     let mut temperature_difference = Difference::init();
     let loop_time = gauge!(LOOP_TIMING);
 
+    let weather_underground = WeatherUnderground::init();
+
     loop {
         let t0 = Instant::now();
         sht31.measure();
@@ -63,8 +73,8 @@ fn main() {
         sht31.report_metrics();
 
         temperature_difference.read_temperature_difference(&mut bme280, &mut mcp9808);
-
         loop_time.set(t0.elapsed().as_secs_f64());
+        weather_underground.send_data();
     }
 }
 
@@ -214,8 +224,6 @@ impl SHT31 {
         self.metric_temperature_c.set(self.temperature_c);
         self.metric_temperature_f.set(self.temperature_f);
     }
-
-
 }
 
 struct Difference {
@@ -233,5 +241,32 @@ impl Difference {
     fn read_temperature_difference(&mut self, bme280: &mut BME280, mcp9808: &mut MCP9808) {
         self.temperature_difference
             .set(bme280.temperature_c - mcp9808.temperature_c);
+    }
+}
+
+struct WeatherUnderground {
+    http_client: Client,
+}
+
+impl WeatherUnderground {
+    fn init() -> Self {
+        WeatherUnderground {
+            http_client: Client::new(),
+        }
+    }
+
+    fn send_data(&self) {
+        let url = Url::parse_with_params(
+            WEATHER_UNDERGROUND_URL,
+            &[
+                ("ID", WEATHER_UNDERGROUND_ID),
+                ("PASSWORD", WEATHER_UNDERGROUND_UPLOAD_KEY),
+                // YYYY-MM-DD HH:MM:SS
+                ("dateutc", &Utc::now().format("%Y-%m-%d %H:%M:%S").to_string()),
+            ],
+        )
+        .unwrap();
+
+        let _response = self.http_client.get(url).send().unwrap();
     }
 }

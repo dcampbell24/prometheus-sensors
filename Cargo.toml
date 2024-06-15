@@ -8,11 +8,13 @@ edition = "2021"
 
 [dependencies]
 bme280 = "0.5"
+chrono = "0.4"
 embedded-hal = "1"
 linux-embedded-hal = "0.4"
 mcp9808 = "0.3"
 metrics = "0.22"
 metrics-exporter-prometheus = "0.14"
+reqwest = { version = "0.12", features = ["blocking"] }
 sht31 = { git = "https://github.com/dcampbell24/SHT31-rs.git" }
 # sht31 = "0.3"
 
