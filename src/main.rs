@@ -15,7 +15,7 @@ use sht31::mode::{Sht31Measure, Sht31Reader, SingleShot};
 use sht31::{Accuracy, TemperatureUnit};
 
 const WEATHER_UNDERGROUND_URL: &str =
-    "https://weatherstation.wunderground.com/weatherstation/updateweatherstation.php";
+    "https://rtupdate.wunderground.com/weatherstation/updateweatherstation.php";
 const WEATHER_UNDERGROUND_ID: &str = "";
 const WEATHER_UNDERGROUND_UPLOAD_KEY: &str = "";
 
@@ -74,7 +74,7 @@ fn main() {
 
         temperature_difference.read_temperature_difference(&mut bme280, &mut mcp9808);
         loop_time.set(t0.elapsed().as_secs_f64());
-        weather_underground.send_data();
+        weather_underground.send_data(&bme280, &mcp9808, &sht31);
     }
 }
 
@@ -255,14 +255,28 @@ impl WeatherUnderground {
         }
     }
 
-    fn send_data(&self) {
+    fn send_data(&self, bme280: &BME280, mcp9808: &MCP9808, sht31: &SHT31) {
         let url = Url::parse_with_params(
             WEATHER_UNDERGROUND_URL,
             &[
+                ("action", "updateraw"),
                 ("ID", WEATHER_UNDERGROUND_ID),
                 ("PASSWORD", WEATHER_UNDERGROUND_UPLOAD_KEY),
                 // YYYY-MM-DD HH:MM:SS
-                ("dateutc", &Utc::now().format("%Y-%m-%d %H:%M:%S").to_string()),
+                (
+                    "dateutc",
+                    &Utc::now().format("%Y-%m-%d %H:%M:%S").to_string(),
+                ),
+                // humidity - [% outdoor humidity 0-100%]
+                ("humidity", &sht31.humidity.to_string()),
+                ("tempf", &sht31.temperature_f.to_string()),
+                ("temp2f", &mcp9808.temperature_f.to_string()),
+                ("temp3f", &bme280.temperature_f.to_string()),
+                // baromin - [barometric pressure atm to inches hg (mercury)]
+                ("baromin", &(bme280.pressure * 29.92).to_string()),
+                ("realtime", "1"),
+                // Frequency in seconds.
+                ("rtfreg", "10"),
             ],
         )
         .unwrap();
