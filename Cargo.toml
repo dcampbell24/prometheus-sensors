@@ -1,6 +1,6 @@
 [package]
 name = "prometheus-sensors"
-description = "A bme280 and mcp9808 service."
+description = "A bme280, mcp9808, and sht31 service."
 authors = ["David Lawrence Campbell"]
 license = "MIT"
 version = "0.1.0"
@@ -8,7 +8,7 @@ rust-version = "1.82"
 edition = "2021"
 repository = "https://github.com/dcampbell24/prometheus-sensors"
 categories = ["hardware-support"]
-keywords = ["sensors", "weather"]
+keywords = ["prometheus", "sensors", "weather", "weather-underground"]
 
 [dependencies]
 bme280 = "0.5"
