@@ -4,7 +4,11 @@ description = "A bme280 and mcp9808 service."
 authors = ["David Lawrence Campbell"]
 license = "MIT"
 version = "0.1.0"
+rust-version = "1.82"
 edition = "2021"
+repository = "https://github.com/dcampbell24/prometheus-sensors"
+categories = ["hardware-support"]
+keywords = ["sensors", "weather"]
 
 [dependencies]
 bme280 = "0.5"
@@ -16,6 +20,12 @@ metrics = "0.22"
 metrics-exporter-prometheus = "0.14"
 reqwest = { version = "0.12", features = ["blocking"] }
 sht31 = "0.3"
+
+[lints.clippy]
+cargo = "warn"
+pedantic = "warn"
+
+multiple_crate_versions = { level = "allow", priority = 1 }
 
 [package.metadata.deb]
 maintainer = "David Campbell <dcampbell24@gmail.com>"
