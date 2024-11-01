@@ -11,15 +11,22 @@ categories = ["hardware-support"]
 keywords = ["prometheus", "sensors", "weather", "weather-underground"]
 
 [dependencies]
+anyhow = "1"
 bme280 = "0.5"
-chrono = "0.4"
+chrono = { version = "0.4", optional = true }
+dirs = { version = "5", optional = true }
 embedded-hal = "1"
 linux-embedded-hal = "0.4"
 mcp9808 = "0.3"
 metrics = "0.22"
 metrics-exporter-prometheus = "0.14"
-reqwest = { version = "0.12", features = ["blocking"] }
+reqwest = { version = "0.12", features = ["blocking"], optional = true }
+ron = { version = "0.8", optional = true }
+serde = { version = "1", features = ["derive"], optional = true }
 sht31 = "0.3"
+
+[features]
+weather-underground = ["dep:chrono", "dep:dirs", "dep:reqwest", "dep:ron", "dep:serde"]
 
 [lints.clippy]
 cargo = "warn"

@@ -1,7 +1,14 @@
+#[cfg(feature = "weather-underground")]
+use std::{env, fs};
 use std::time::Instant;
 
+#[cfg(feature = "weather-underground")]
+use anyhow::Context;
 use bme280::i2c;
+#[cfg(feature = "weather-underground")]
 use chrono::Utc;
+#[cfg(feature = "weather-underground")]
+use dirs::home_dir;
 use embedded_hal::delay::DelayNs;
 use linux_embedded_hal::{Delay, I2cdev};
 use mcp9808::reg_conf::{Configuration, ShutdownMode};
@@ -9,15 +16,19 @@ use mcp9808::reg_res::ResolutionVal;
 use mcp9808::reg_temp_generic::ReadableTempRegister;
 use metrics::{gauge, Gauge};
 use metrics_exporter_prometheus::PrometheusBuilder;
-use reqwest::blocking::Client;
-use reqwest::Url;
+#[cfg(feature = "weather-underground")]
+use reqwest::{blocking::Client, Url};
+#[cfg(feature = "weather-underground")]
+use serde::{Deserialize, Serialize};
 use sht31::mode::{Sht31Measure, Sht31Reader, SingleShot};
 use sht31::{Accuracy, TemperatureUnit};
 
+#[cfg(feature = "weather-underground")]
 const WEATHER_UNDERGROUND_URL: &str =
     "https://rtupdate.wunderground.com/weatherstation/updateweatherstation.php";
-const WEATHER_UNDERGROUND_ID: &str = "";
-const WEATHER_UNDERGROUND_UPLOAD_KEY: &str = "";
+
+#[cfg(feature = "weather-underground")]
+const WEATHER_UNDERGROUND_SECRET: &str = "weather-underground.txt";
 
 const BUS_PATH: &str = "/dev/i2c-1";
 const TEMPERATURE_DIFFERENCE: &str = "sensors_temperature_difference_C";
@@ -35,7 +46,7 @@ const SHT31_HUMIDITY: &str = "sensors_humidity_percent_sht31";
 const SHT31_TEMPERATURE_C: &str = "sensors_temperature_celsius_sht31";
 const SHT31_TEMPERATURE_F: &str = "sensors_temperature_fahrenheit_sht31";
 
-fn main() {
+fn main() -> anyhow::Result<()> {
     let builder = PrometheusBuilder::new();
     // Defaults to enabled, listening at 0.0.0.0:9000
     builder
@@ -56,7 +67,27 @@ fn main() {
     let mut temperature_difference = Difference::init();
     let loop_time = gauge!(LOOP_TIMING);
 
-    let weather_underground = WeatherUnderground::init();
+    #[cfg(feature = "weather-underground")]
+    let weather_underground = {
+        let pwd = env::current_dir()?;
+        let path = pwd.join(WEATHER_UNDERGROUND_SECRET);
+        let mut error_msg = format!("{path:?} doesn't exist");
+
+        let mut weather_underground_secret = String::new();
+        if fs::exists(&path)? {
+            weather_underground_secret = fs::read_to_string(path)?;
+        } else if let Some(dir) = home_dir() {
+            let path = dir.join(WEATHER_UNDERGROUND_SECRET);
+            error_msg.push_str(&format!(" and {path:?} doesn't exist"));
+            weather_underground_secret = fs::read_to_string(&path).context(error_msg)?;
+        } else {
+            error_msg.push_str("and variable $HOME cannot be found");
+            Err(anyhow::Error::msg(error_msg))?;
+        }
+        let weather_underground_secret: WeatherUndergroundSecret =
+            ron::from_str(&weather_underground_secret)?;
+        WeatherUnderground::init(weather_underground_secret)
+    };
 
     loop {
         let t0 = Instant::now();
@@ -74,6 +105,8 @@ fn main() {
 
         temperature_difference.read_temperature_difference(&mut bme280, &mut mcp9808);
         loop_time.set(t0.elapsed().as_secs_f64());
+
+        #[cfg(feature = "weather-underground")]
         weather_underground.send_data(&bme280, &mcp9808, &sht31);
     }
 }
@@ -244,14 +277,18 @@ impl Difference {
     }
 }
 
+#[cfg(feature = "weather-underground")]
 struct WeatherUnderground {
     http_client: Client,
+    secret: WeatherUndergroundSecret,
 }
 
+#[cfg(feature = "weather-underground")]
 impl WeatherUnderground {
-    fn init() -> Self {
+    fn init(secret: WeatherUndergroundSecret) -> Self {
         WeatherUnderground {
             http_client: Client::new(),
+            secret,
         }
     }
 
@@ -260,8 +297,8 @@ impl WeatherUnderground {
             WEATHER_UNDERGROUND_URL,
             &[
                 ("action", "updateraw"),
-                ("ID", WEATHER_UNDERGROUND_ID),
-                ("PASSWORD", WEATHER_UNDERGROUND_UPLOAD_KEY),
+                ("ID", &self.secret.id),
+                ("PASSWORD", &self.secret.upload_key),
                 // YYYY-MM-DD HH:MM:SS
                 (
                     "dateutc",
@@ -283,4 +320,11 @@ impl WeatherUnderground {
 
         let _response = self.http_client.get(url).send().unwrap();
     }
+}
+
+#[cfg(feature = "weather-underground")]
+#[derive(Debug, Deserialize, Serialize)]
+struct WeatherUndergroundSecret {
+    id: String,
+    upload_key: String,
 }

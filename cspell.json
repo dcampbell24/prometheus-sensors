@@ -2,6 +2,14 @@
     "version": "0.2",
     "language": "en",
     "words": [
-        "dpkg"
+        "chrono",
+        "baromin",
+        "dateutc",
+        "dpkg",
+        "I2cdev",
+        "reqwest",
+        "rtfreg",
+        "tempf",
+        "updateraw"
     ]
 }
