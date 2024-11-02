@@ -4,8 +4,20 @@ This captures the readings from the sensors bme-280, mcp-9808, and sht-31.
 Then it logs the readings with prometheus and reports them to Weather
 Underground.
 
-You have to provide the Weather Underground credentials and the BUS_PATH may
-be different from what is provided.
+The weather underground features are optionally enabled via:
+
+```sh
+cargo run --release --features weather-underground
+```
+
+## Configuration Files
+
+Located in the path that the program is run from or in your home directory:
+
+```sh
+bus-path.txt # Holds the path to your i2c driver. For example /dev/i2c-1.
+weather-underground.ron # Holds your weather underground id and upload_key.
+```
 
 ## Debian
 

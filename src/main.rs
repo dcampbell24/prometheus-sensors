@@ -17,7 +17,6 @@ use metrics_exporter_prometheus::PrometheusBuilder;
 use sht31::mode::{Sht31Measure, Sht31Reader, SingleShot};
 use sht31::{Accuracy, TemperatureUnit};
 
-// const BUS_PATH: &str = "/dev/i2c-1";
 const TEMPERATURE_DIFFERENCE: &str = "sensors_temperature_difference_C";
 const LOOP_TIMING: &str = "sensors_loop_timing";
 
