@@ -14,7 +14,7 @@ keywords = ["prometheus", "sensors", "weather", "weather-underground"]
 anyhow = "1"
 bme280 = "0.5"
 chrono = { version = "0.4", optional = true }
-dirs = { version = "5", optional = true }
+dirs = "5"
 embedded-hal = "1"
 linux-embedded-hal = "0.4"
 mcp9808 = "0.3"
@@ -26,7 +26,7 @@ serde = { version = "1", features = ["derive"], optional = true }
 sht31 = "0.3"
 
 [features]
-weather-underground = ["dep:chrono", "dep:dirs", "dep:reqwest", "dep:ron", "dep:serde"]
+weather-underground = ["dep:chrono", "dep:reqwest", "dep:ron", "dep:serde"]
 
 [lints.clippy]
 cargo = "warn"

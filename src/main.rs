@@ -1,13 +1,11 @@
-#[cfg(feature = "weather-underground")]
-use std::{env, fs};
-use std::time::Instant;
+mod weather_underground;
 
-#[cfg(feature = "weather-underground")]
+use std::path::PathBuf;
+use std::time::Instant;
+use std::{env, fs};
+
 use anyhow::Context;
 use bme280::i2c;
-#[cfg(feature = "weather-underground")]
-use chrono::Utc;
-#[cfg(feature = "weather-underground")]
 use dirs::home_dir;
 use embedded_hal::delay::DelayNs;
 use linux_embedded_hal::{Delay, I2cdev};
@@ -16,21 +14,10 @@ use mcp9808::reg_res::ResolutionVal;
 use mcp9808::reg_temp_generic::ReadableTempRegister;
 use metrics::{gauge, Gauge};
 use metrics_exporter_prometheus::PrometheusBuilder;
-#[cfg(feature = "weather-underground")]
-use reqwest::{blocking::Client, Url};
-#[cfg(feature = "weather-underground")]
-use serde::{Deserialize, Serialize};
 use sht31::mode::{Sht31Measure, Sht31Reader, SingleShot};
 use sht31::{Accuracy, TemperatureUnit};
 
-#[cfg(feature = "weather-underground")]
-const WEATHER_UNDERGROUND_URL: &str =
-    "https://rtupdate.wunderground.com/weatherstation/updateweatherstation.php";
-
-#[cfg(feature = "weather-underground")]
-const WEATHER_UNDERGROUND_SECRET: &str = "weather-underground.txt";
-
-const BUS_PATH: &str = "/dev/i2c-1";
+// const BUS_PATH: &str = "/dev/i2c-1";
 const TEMPERATURE_DIFFERENCE: &str = "sensors_temperature_difference_C";
 const LOOP_TIMING: &str = "sensors_loop_timing";
 
@@ -53,41 +40,25 @@ fn main() -> anyhow::Result<()> {
         .install()
         .expect("failed to install recorder/exporter");
 
+    let bus_path = get_file_contents(&PathBuf::from("bus-path.txt"))?;
+    let bus_path = bus_path.trim();
+
     let mut delay = Delay;
 
-    let i2c_bus = I2cdev::new(BUS_PATH).unwrap();
+    let i2c_bus = I2cdev::new(&bus_path)?;
     let mut bme280 = BME280::init(i2c_bus, &mut delay);
 
-    let i2c_bus = I2cdev::new(BUS_PATH).unwrap();
+    let i2c_bus = I2cdev::new(&bus_path)?;
     let mut mcp9808 = MCP9808::init(i2c_bus);
 
-    let i2c_bus = I2cdev::new(BUS_PATH).unwrap();
+    let i2c_bus = I2cdev::new(&bus_path)?;
     let mut sht31 = SHT31::init(i2c_bus, &mut delay);
 
     let mut temperature_difference = Difference::init();
     let loop_time = gauge!(LOOP_TIMING);
 
     #[cfg(feature = "weather-underground")]
-    let weather_underground = {
-        let pwd = env::current_dir()?;
-        let path = pwd.join(WEATHER_UNDERGROUND_SECRET);
-        let mut error_msg = format!("{path:?} doesn't exist");
-
-        let mut weather_underground_secret = String::new();
-        if fs::exists(&path)? {
-            weather_underground_secret = fs::read_to_string(path)?;
-        } else if let Some(dir) = home_dir() {
-            let path = dir.join(WEATHER_UNDERGROUND_SECRET);
-            error_msg.push_str(&format!(" and {path:?} doesn't exist"));
-            weather_underground_secret = fs::read_to_string(&path).context(error_msg)?;
-        } else {
-            error_msg.push_str("and variable $HOME cannot be found");
-            Err(anyhow::Error::msg(error_msg))?;
-        }
-        let weather_underground_secret: WeatherUndergroundSecret =
-            ron::from_str(&weather_underground_secret)?;
-        WeatherUnderground::init(weather_underground_secret)
-    };
+    let weather_underground = weather_underground::WeatherUnderground::init()?;
 
     loop {
         let t0 = Instant::now();
@@ -109,6 +80,25 @@ fn main() -> anyhow::Result<()> {
         #[cfg(feature = "weather-underground")]
         weather_underground.send_data(&bme280, &mcp9808, &sht31);
     }
+}
+
+fn get_file_contents(file: &PathBuf) -> anyhow::Result<String> {
+    let pwd = env::current_dir()?;
+    let path = pwd.join(file);
+    let mut error_msg = format!("{path:?} doesn't exist");
+
+    let mut contents = String::new();
+    if fs::exists(&path)? {
+        contents = fs::read_to_string(path)?;
+    } else if let Some(dir) = home_dir() {
+        let path = dir.join(file);
+        error_msg.push_str(&format!(" and {path:?} doesn't exist"));
+        contents = fs::read_to_string(&path).context(error_msg)?;
+    } else {
+        error_msg.push_str("and variable $HOME cannot be found");
+        Err(anyhow::Error::msg(error_msg))?;
+    }
+    Ok(contents)
 }
 
 // Pressure ± 100 Pa
@@ -275,56 +265,4 @@ impl Difference {
         self.temperature_difference
             .set(bme280.temperature_c - mcp9808.temperature_c);
     }
-}
-
-#[cfg(feature = "weather-underground")]
-struct WeatherUnderground {
-    http_client: Client,
-    secret: WeatherUndergroundSecret,
-}
-
-#[cfg(feature = "weather-underground")]
-impl WeatherUnderground {
-    fn init(secret: WeatherUndergroundSecret) -> Self {
-        WeatherUnderground {
-            http_client: Client::new(),
-            secret,
-        }
-    }
-
-    fn send_data(&self, bme280: &BME280, mcp9808: &MCP9808, sht31: &SHT31) {
-        let url = Url::parse_with_params(
-            WEATHER_UNDERGROUND_URL,
-            &[
-                ("action", "updateraw"),
-                ("ID", &self.secret.id),
-                ("PASSWORD", &self.secret.upload_key),
-                // YYYY-MM-DD HH:MM:SS
-                (
-                    "dateutc",
-                    &Utc::now().format("%Y-%m-%d %H:%M:%S").to_string(),
-                ),
-                // humidity - [% outdoor humidity 0-100%]
-                ("humidity", &sht31.humidity.to_string()),
-                ("tempf", &sht31.temperature_f.to_string()),
-                ("temp2f", &mcp9808.temperature_f.to_string()),
-                ("temp3f", &bme280.temperature_f.to_string()),
-                // baromin - [barometric pressure atm to inches hg (mercury)]
-                ("baromin", &(bme280.pressure * 29.92).to_string()),
-                ("realtime", "1"),
-                // Frequency in seconds.
-                ("rtfreg", "10"),
-            ],
-        )
-        .unwrap();
-
-        let _response = self.http_client.get(url).send().unwrap();
-    }
-}
-
-#[cfg(feature = "weather-underground")]
-#[derive(Debug, Deserialize, Serialize)]
-struct WeatherUndergroundSecret {
-    id: String,
-    upload_key: String,
 }
