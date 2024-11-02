@@ -77,7 +77,7 @@ fn main() -> anyhow::Result<()> {
         loop_time.set(t0.elapsed().as_secs_f64());
 
         #[cfg(feature = "weather-underground")]
-        weather_underground.send_data(&bme280, &mcp9808, &sht31);
+        weather_underground.send_data(&bme280, &mcp9808, &sht31)?;
     }
 }
 

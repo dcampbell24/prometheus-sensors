@@ -29,7 +29,12 @@ impl WeatherUnderground {
         })
     }
 
-    pub fn send_data(&self, bme280: &BME280, mcp9808: &MCP9808, sht31: &SHT31) {
+    pub fn send_data(
+        &self,
+        bme280: &BME280,
+        mcp9808: &MCP9808,
+        sht31: &SHT31,
+    ) -> anyhow::Result<()> {
         let url = Url::parse_with_params(
             WEATHER_UNDERGROUND_URL,
             &[
@@ -52,10 +57,10 @@ impl WeatherUnderground {
                 // Frequency in seconds.
                 ("rtfreg", "10"),
             ],
-        )
-        .unwrap();
+        )?;
 
-        let _response = self.http_client.get(url).send().unwrap();
+        let _response = self.http_client.get(url).send()?;
+        Ok(())
     }
 }
 
