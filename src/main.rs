@@ -44,13 +44,13 @@ fn main() -> anyhow::Result<()> {
 
     let mut delay = Delay;
 
-    let i2c_bus = I2cdev::new(&bus_path)?;
+    let i2c_bus = I2cdev::new(bus_path)?;
     let mut bme280 = BME280::init(i2c_bus, &mut delay);
 
-    let i2c_bus = I2cdev::new(&bus_path)?;
+    let i2c_bus = I2cdev::new(bus_path)?;
     let mut mcp9808 = MCP9808::init(i2c_bus);
 
-    let i2c_bus = I2cdev::new(&bus_path)?;
+    let i2c_bus = I2cdev::new(bus_path)?;
     let mut sht31 = SHT31::init(i2c_bus, &mut delay);
 
     let mut temperature_difference = Difference::init();
