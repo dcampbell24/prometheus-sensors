@@ -4,7 +4,7 @@ use chrono::Utc;
 use reqwest::{blocking::Client, Url};
 use serde::{Deserialize, Serialize};
 
-use crate::{get_file_contents, BME280, MCP9808, SHT31};
+use crate::{get_config_file, BME280, MCP9808, SHT31};
 
 const WEATHER_UNDERGROUND_URL: &str =
     "https://rtupdate.wunderground.com/weatherstation/updateweatherstation.php";
@@ -18,7 +18,7 @@ pub struct WeatherUnderground {
 
 impl WeatherUnderground {
     pub fn init() -> anyhow::Result<Self> {
-        let secret = get_file_contents(&PathBuf::from(WEATHER_UNDERGROUND_SECRET))?;
+        let secret = get_config_file(&PathBuf::from(WEATHER_UNDERGROUND_SECRET))?;
         let secret: WeatherUndergroundSecret = ron::from_str(&secret)?;
 
         Ok(WeatherUnderground {

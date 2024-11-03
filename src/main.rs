@@ -40,7 +40,7 @@ fn main() -> anyhow::Result<()> {
         .install()
         .expect("failed to install recorder/exporter");
 
-    let bus_path = match get_file_contents(&PathBuf::from("i2c-bus.txt")) {
+    let bus_path = match get_config_file(&PathBuf::from("i2c-bus.txt")) {
         Ok(bus_path) => bus_path,
         Err(_) => "/dev/i2c-1".to_string(),
     };
@@ -85,7 +85,7 @@ fn main() -> anyhow::Result<()> {
     }
 }
 
-fn get_file_contents(file: &PathBuf) -> anyhow::Result<String> {
+fn get_config_file(file: &PathBuf) -> anyhow::Result<String> {
     let mut contents = String::new();
     if let Some(dir) = config_local_dir() {
         let path = dir.join(file);
