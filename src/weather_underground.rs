@@ -1,5 +1,3 @@
-#![cfg(feature = "weather-underground")]
-
 use std::path::PathBuf;
 
 use chrono::Utc;

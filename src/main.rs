@@ -1,3 +1,4 @@
+#[cfg(feature = "weather-underground")]
 mod weather_underground;
 
 use std::path::PathBuf;

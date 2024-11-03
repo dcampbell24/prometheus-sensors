@@ -28,6 +28,7 @@ ron = { version = "0.8", optional = true }
 serde = { version = "1", features = ["derive"], optional = true }
 
 [features]
+# default = ["weather-underground"]
 weather-underground = ["dep:chrono", "dep:reqwest", "dep:ron", "dep:serde"]
 
 [lints.clippy]
