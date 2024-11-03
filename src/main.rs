@@ -1,9 +1,9 @@
 #[cfg(feature = "weather-underground")]
 mod weather_underground;
 
+use std::fs;
 use std::path::PathBuf;
 use std::time::Instant;
-use std::fs;
 
 use anyhow::Context;
 use bme280::i2c;
