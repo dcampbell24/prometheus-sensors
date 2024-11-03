@@ -39,7 +39,10 @@ fn main() -> anyhow::Result<()> {
         .install()
         .expect("failed to install recorder/exporter");
 
-    let bus_path = get_file_contents(&PathBuf::from("bus-path.txt"))?;
+    let bus_path = match get_file_contents(&PathBuf::from("bus-path.txt")) {
+        Ok(bus_path) => bus_path,
+        Err(_) => "/dev/i2c-1".to_string(),
+    };
     let bus_path = bus_path.trim();
 
     let mut delay = Delay;

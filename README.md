@@ -15,7 +15,7 @@ cargo run --release --features weather-underground
 Located in the path that the program is run from or in your home directory:
 
 ```sh
-bus-path.txt # Holds the path to your i2c driver. For example /dev/i2c-1.
+bus-path.txt # Holds the path to your i2c driver. Defaults to "/dev/i2c-1".
 weather-underground.ron # Holds your weather underground id and upload_key.
 ```
 
