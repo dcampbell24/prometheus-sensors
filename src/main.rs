@@ -3,11 +3,11 @@ mod weather_underground;
 
 use std::path::PathBuf;
 use std::time::Instant;
-use std::{env, fs};
+use std::fs;
 
 use anyhow::Context;
 use bme280::i2c;
-use dirs::home_dir;
+use dirs::config_local_dir;
 use embedded_hal::delay::DelayNs;
 use linux_embedded_hal::{Delay, I2cdev};
 use mcp9808::reg_conf::{Configuration, ShutdownMode};
@@ -40,7 +40,7 @@ fn main() -> anyhow::Result<()> {
         .install()
         .expect("failed to install recorder/exporter");
 
-    let bus_path = match get_file_contents(&PathBuf::from("bus-path.txt")) {
+    let bus_path = match get_file_contents(&PathBuf::from("i2c-bus.txt")) {
         Ok(bus_path) => bus_path,
         Err(_) => "/dev/i2c-1".to_string(),
     };
@@ -86,20 +86,13 @@ fn main() -> anyhow::Result<()> {
 }
 
 fn get_file_contents(file: &PathBuf) -> anyhow::Result<String> {
-    let pwd = env::current_dir()?;
-    let path = pwd.join(file);
-    let mut error_msg = format!("{path:?} doesn't exist");
-
     let mut contents = String::new();
-    if fs::exists(&path)? {
-        contents = fs::read_to_string(path)?;
-    } else if let Some(dir) = home_dir() {
+    if let Some(dir) = config_local_dir() {
         let path = dir.join(file);
-        error_msg.push_str(&format!(" and {path:?} doesn't exist"));
+        let error_msg = format!("{path:?} doesn't exist");
         contents = fs::read_to_string(&path).context(error_msg)?;
     } else {
-        error_msg.push_str("and variable $HOME cannot be found");
-        Err(anyhow::Error::msg(error_msg))?;
+        Err(anyhow::Error::msg("config local can't be found"))?;
     }
     Ok(contents)
 }
