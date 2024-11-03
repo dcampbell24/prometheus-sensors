@@ -43,3 +43,4 @@ assets = [
     ["target/release/prometheus-sensors", "usr/bin/", "755"],
     ["sensors.service", "etc/systemd/system/", "755"],
 ]
+depends = "$auto"
