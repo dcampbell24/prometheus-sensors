@@ -1,6 +1,6 @@
 [package]
 name = "prometheus-sensors"
-description = "A bme280, mcp9808, and sht31 service."
+description = "bme280, mcp9808, and sht31 service."
 authors = ["David Lawrence Campbell"]
 license = "MIT"
 version = "0.1.0"
@@ -43,4 +43,5 @@ assets = [
     ["target/release/prometheus-sensors", "usr/bin/", "755"],
     ["sensors.service", "etc/systemd/system/", "755"],
 ]
-depends = ""
+changelog = "debian/changelog"
+section = "misc"

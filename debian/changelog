@@ -1,0 +1,5 @@
+prometheus-sensors (0.1.0-1) bookworm unstable experimental; urgency=medium
+
+   * Initial Release.
+
+ -- David Campbell <dcampbell24@gmail.com>  Wed, 06 Nov 2024 20:00:00 -0500
