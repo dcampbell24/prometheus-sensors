@@ -42,7 +42,7 @@ copyright = "2024 David Lawrence Campbell"
 maintainer = "David Campbell <dcampbell24@gmail.com>"
 assets = [
     ["target/release/prometheus-sensors", "usr/bin/", "755"],
-    ["sensors.service", "etc/systemd/system/", "755"],
+    ["sensors.service", "etc/systemd/system/", "644"],
 ]
 changelog = "debian/changelog"
 section = "misc"
