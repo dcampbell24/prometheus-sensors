@@ -38,6 +38,7 @@ pedantic = "warn"
 multiple_crate_versions = { level = "allow", priority = 1 }
 
 [package.metadata.deb]
+copyright = "2024 David Lawrence Campbell"
 maintainer = "David Campbell <dcampbell24@gmail.com>"
 assets = [
     ["target/release/prometheus-sensors", "usr/bin/", "755"],
